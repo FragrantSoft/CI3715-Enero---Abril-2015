@@ -65,8 +65,8 @@ def PropietarioAll(request):
         if form.is_valid():
                   
             obj = Propietario(
-                nombre_prop = form.cleaned_data['nombre_prop'],
-                CI_prop    = form.cleaned_data['CI_prop'],
+                nombre_prop     = form.cleaned_data['nombre_prop'],
+                CI_prop         = form.cleaned_data['CI_prop'],
                 telefono_prop   = form.cleaned_data['telefono_prop'],
                 email_prop      = form.cleaned_data['email_prop'],
             )
@@ -112,17 +112,10 @@ def estacionamientos_all(request):
         # Si el formulario es valido, entonces creamos un objeto con
         # el constructor del modelo
         if form.is_valid():
-            
-#            obj1 = Propietario(
-#                nomb_prop = form.cleaned_data['propietario'],
-#                telefono3   = form.cleaned_data['telefono_3'],
-#                email2      = form.cleaned_data['email_2']
-#            )
-#            obj1.save() 
                   
             obj = Estacionamiento(
                 nombre      = form.cleaned_data['nombre'],
-                propietario    = form.cleaned_data['CI_prop'],
+                CI_prop     = form.cleaned_data['CI_prop'],
                 direccion   = form.cleaned_data['direccion'],
                 rif         = form.cleaned_data['rif'],
                 telefono1   = form.cleaned_data['telefono_1'],
@@ -135,7 +128,6 @@ def estacionamientos_all(request):
                      
             # Recargamos los estacionamientos ya que acabamos de agregar
             estacionamientos = Estacionamiento.objects.all()
-            propietarios = Propietario.objects.all()
             form = EstacionamientoForm()
 
     return render(
