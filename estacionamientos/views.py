@@ -26,6 +26,7 @@ from estacionamientos.controller import (
 
 from estacionamientos.forms import (
     EstacionamientoExtendedForm,
+    PropietarioForm,
     EstacionamientoForm,
     ReservaForm,
     PagoForm,
@@ -50,6 +51,41 @@ from estacionamientos.models import (
 from django.template.context_processors import request
 from django.forms.forms import Form
 
+def PropietarioAll(request):
+    Propietarios = Propietario.objects.all()
+    # Si es un GET, mandamos un formulario vacio
+    if request.method == 'GET':
+        form = PropietarioForm()    
+    elif request.method == 'POST':
+        # Creamos un formulario con los datos que recibimos
+        form = PropietarioForm(request.POST)
+        
+        # Si el formulario es valido, entonces creamos un objeto con
+        # el constructor del modelo
+        if form.is_valid():
+                  
+            obj = Propietario(
+                nombre_prop = form.cleaned_data['nombre_prop'],
+                CI_prop    = form.cleaned_data['CI_prop'],
+                telefono_prop   = form.cleaned_data['telefono_prop'],
+                email_prop      = form.cleaned_data['email_prop'],
+            )
+            obj.save()
+            
+
+                     
+            # Recargamos los estacionamientos ya que acabamos de agregar
+            Propietarios = Propietario.objects.all()
+            form = PropietarioForm()
+
+    return render(
+        request,
+        'catalogo-estacionamientos.html',
+        { 'form': form
+        , 'estacionamientos': estacionamientos
+        }
+    )        
+        
 # Usamos esta vista para procesar todos los estacionamientos
 def estacionamientos_all(request):
     estacionamientos = Estacionamiento.objects.all()
