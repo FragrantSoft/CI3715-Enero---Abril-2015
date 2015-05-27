@@ -80,9 +80,9 @@ def PropietarioAll(request):
 
     return render(
         request,
-        'catalogo-estacionamientos.html',
+        'catalogo-propietario.html',
         { 'form': form
-        , 'estacionamientos': estacionamientos
+        , 'Propietarios': Propietarios
         }
     )        
         
