@@ -26,23 +26,66 @@ from estacionamientos.controller import (
 
 from estacionamientos.forms import (
     EstacionamientoExtendedForm,
+    PropietarioForm,
     EstacionamientoForm,
     ReservaForm,
     PagoForm,
     RifForm,
     CedulaForm,
-)
+    BilleteraElectronicaForm,
+    ModoPagoForm, 
+    BilleteraElectronicaPagoForm)
+
 from estacionamientos.models import (
     Estacionamiento,
+    Propietario,
     Reserva,
     Pago,
     TarifaHora,
     TarifaMinuto,
     TarifaHorayFraccion,
     TarifaFinDeSemana,
-    TarifaHoraPico
+    TarifaHoraPico,
+    BilleteraElectronica
 )
+from django.template.context_processors import request
+from django.forms.forms import Form
 
+def PropietarioAll(request):
+    Propietarios = Propietario.objects.all()
+    # Si es un GET, mandamos un formulario vacio
+    if request.method == 'GET':
+        form = PropietarioForm()    
+    elif request.method == 'POST':
+        # Creamos un formulario con los datos que recibimos
+        form = PropietarioForm(request.POST)
+        
+        # Si el formulario es valido, entonces creamos un objeto con
+        # el constructor del modelo
+        if form.is_valid():
+                  
+            obj = Propietario(
+                nombre_prop     = form.cleaned_data['nombre_prop'],
+                Cedula          = form.cleaned_data['CI_prop'],
+                telefono_prop   = form.cleaned_data['telefono_prop'],
+                email_prop      = form.cleaned_data['email_prop'],
+            )
+            obj.save()
+            
+
+                     
+            # Recargamos los estacionamientos ya que acabamos de agregar
+            Propietarios = Propietario.objects.all()
+            form = PropietarioForm()
+
+    return render(
+        request,
+        'catalogo-propietario.html',
+        { 'form': form
+        , 'Propietarios': Propietarios
+        }
+    )        
+        
 # Usamos esta vista para procesar todos los estacionamientos
 def estacionamientos_all(request):
     estacionamientos = Estacionamiento.objects.all()
@@ -69,18 +112,20 @@ def estacionamientos_all(request):
         # Si el formulario es valido, entonces creamos un objeto con
         # el constructor del modelo
         if form.is_valid():
+                  
             obj = Estacionamiento(
-                propietario = form.cleaned_data['propietario'],
                 nombre      = form.cleaned_data['nombre'],
+                CI_prop     = form.cleaned_data['CI_prop'],
                 direccion   = form.cleaned_data['direccion'],
                 rif         = form.cleaned_data['rif'],
                 telefono1   = form.cleaned_data['telefono_1'],
                 telefono2   = form.cleaned_data['telefono_2'],
-                telefono3   = form.cleaned_data['telefono_3'],
                 email1      = form.cleaned_data['email_1'],
-                email2      = form.cleaned_data['email_2']
             )
             obj.save()
+            
+
+                     
             # Recargamos los estacionamientos ya que acabamos de agregar
             estacionamientos = Estacionamiento.objects.all()
             form = EstacionamientoForm()
@@ -317,8 +362,6 @@ def estacionamiento_pago(request,_id):
                 tarjetaTipo      = form.cleaned_data['tarjetaTipo'],
                 reserva          = reservaFinal,
             )
-
-
             # Se guarda el recibo de pago en la base de datos
             pago.save()
 
@@ -331,13 +374,31 @@ def estacionamiento_pago(request,_id):
                 , 'mensaje' : "Se realizo el pago de reserva satisfactoriamente."
                 }
             )
-
     return render(
         request,
         'pago.html',
         { 'form' : form }
     )
 
+def estacionamiento_modo_pago(request, _id):
+    form = ModoPagoForm()
+    
+    try:
+        estacionamiento = Estacionamiento.objects.get(id = _id)
+    except ObjectDoesNotExist:
+        raise Http404
+    
+    if (estacionamiento.apertura is None):
+        return HttpResponse(status = 403) # No esta permitido acceder a esta vista aun
+    
+    
+    return render(
+        request,
+        'ModoPago.html',
+        { 'form' : form }
+    )
+
+    
 def estacionamiento_ingreso(request):
     form = RifForm()
     if request.method == 'POST':
@@ -361,6 +422,7 @@ def estacionamiento_ingreso(request):
         'consultar-ingreso.html',
         { "form" : form }
     )
+
 
 def estacionamiento_consulta_reserva(request):
     form = CedulaForm()
@@ -495,3 +557,140 @@ def grafica_tasa_de_reservacion(request):
     pyplot.close()
     
     return response
+
+def billetera_pagar(request, _id):
+    form = BilleteraElectronicaPagoForm()
+    
+    try:
+        estacionamiento = Estacionamiento.objects.get(id = _id)
+    except ObjectDoesNotExist:
+        raise Http404
+    
+    if (estacionamiento.apertura is None):
+        return HttpResponse(status = 403) # No esta permitido acceder a esta vista aun
+    
+    if request.method == 'POST':
+        form = BilleteraElectronicaPagoForm(request.POST)
+        if form.is_valid():
+            try:
+                BE = BilleteraElectronica.objects.get(id = form.cleaned_data['id'])
+                if (BE.PIN != form.cleaned_data['pin']):
+                    return render(
+                        request,
+                        'billetera_pagar.html',
+                        { "form"    : form
+                        , "color"   : "red"
+                        ,'mensaje'  : "Autenticación denegada."
+                        }
+                    )
+                    
+                
+            except ObjectDoesNotExist:
+                return render(
+                        request,
+                        'billetera_pagar.html',
+                        { "form"    : form
+                        , "color"   : "red"
+                        ,'mensaje'  : "Autenticación denegada."
+                        }
+                    )
+            
+            monto = Decimal(request.session['monto']).quantize(Decimal('1.00'))
+            if (monto > BE.saldo):
+                return render(
+                        request,
+                        'billetera_pagar.html',
+                        { "formIns"    : form
+                        , "color"   : "red"
+                        ,'mensaje'  : "Saldo es insuficiente."
+                        }
+                    )
+            inicioReserva = datetime(
+                year   = request.session['anioinicial'],
+                month  = request.session['mesinicial'],
+                day    = request.session['diainicial'],
+                hour   = request.session['inicioReservaHora'],
+                minute = request.session['inicioReservaMinuto']
+            )
+
+            finalReserva  = datetime(
+                year   = request.session['aniofinal'],
+                month  = request.session['mesfinal'],
+                day    = request.session['diafinal'],
+                hour   = request.session['finalReservaHora'],
+                minute = request.session['finalReservaMinuto']
+            )
+
+            reservaFinal = Reserva(
+                estacionamiento = estacionamiento,
+                inicioReserva   = inicioReserva,
+                finalReserva    = finalReserva,
+            )
+            
+            # Se guarda la reserva en la base de datos
+            reservaFinal.save()
+
+            pago = Pago(
+                fechaTransaccion = datetime.now(),
+                cedula           = BE.cedula,
+                cedulaTipo       = BE.cedulaTipo,
+                monto            = monto,
+                tarjetaTipo      = "BE",
+                reserva          = reservaFinal,
+            )
+            
+            
+            # Se guarda el recibo de pago en la base de datos
+            pago.save()
+
+            return render(
+                request,
+                'billetera_pagar.html',
+                { "id"      : _id
+                , "pago"    : pago
+                , "color"   : "green"
+                , 'mensaje' : "Se realizo el pago de reserva satisfactoriamente."
+                }
+            )
+    return render(
+        request,
+        'billetera_pagar.html',
+        { 'form' : form }
+    )
+        
+def billetera_crear(request):
+    form = BilleteraElectronicaForm()
+    
+    if request.method == 'POST':
+        form = BilleteraElectronicaForm(request.POST)
+        if form.is_valid():
+            
+            billetera = BilleteraElectronica(
+                nombreUsuario    = form.cleaned_data['nombre'],
+                apellidoUsuario  = form.cleaned_data['apellido'],
+                cedulaTipo       = form.cleaned_data['cedulaTipo'],
+                cedula           = form.cleaned_data['cedula'],
+                PIN              = form.cleaned_data['pin'],
+                saldo            = Decimal(0).quantize(Decimal('1.00'))
+            )
+            
+            billetera.save();
+            
+            return render(
+                request,
+                'crearbilletera.html',
+                { "billetera"    : billetera
+                , "color"   : "green"
+                , 'mensaje' : "Se ha creado la billetera satisfactoriamente."
+                }
+            )
+    
+    return render(
+        request,
+        'crearbilletera.html',
+        {
+         'form' : form
+        }
+    )
+    
+    

@@ -6,7 +6,6 @@
 {% endblock %}
 
 {% block body%}
-  <body {% if mensaje %} onunload="openlink()" {% endif %}>
 {% endblock %}
 
 {% block menu %}{% endblock %}
@@ -22,65 +21,31 @@
           method="post"
           class="form form-vertical"
         >
+        <div class="col-md-8" style="color:{{color}}">
+          {{ mensaje }}
+          <hr>
+        </div>
           {% csrf_token %}
           <div class="control-group">
             <div class="controls">
               <p>
-                {{ form.nombre }}
+                {{ form.id }}
                 <span
                   class='error'
-                  id='{{form.nombre.name}}_error'
+                  id='{{form.id.name}}_error'
                   aria-live="polite"
                 ></span>
               </p>
-              {{ form.nombre.errors }}
+              {{ form.id.errors }}
               <p>
-                {{ form.apellido }}
+                {{ form.pin }}
                 <span
                   class='error'
-                  id='{{form.apellido.name}}_error'
+                  id='{{form.pin.name}}_error'
                   aria-live="polite"
                 ></span>
               </p>
-              {{ form.apellido.errors }}
-              <p>
-                <table><tbody><tr>
-                  <td>
-                    {{ form.cedulaTipo }}
-                  </td>
-                  <td>
-                    {{ form.cedula }}
-                  </td>
-                </tr></tbody></table>
-                <span
-                  class='error'
-                  id='{{form.cedula.name}}_error'
-                  aria-live="polite"
-                ></span>
-                {{ form.cedula.errors }}
-              </p>
-              <table width="300" border="0" cellspacing="0">
-                <tr>
-                  <td><font size="32" color="blue"><i class="fa fa-cc-visa"> </i></font></td>
-                  <td><font size="32" color="red"><i class="fa fa-cc-mastercard"> </i></font></td>
-                  <td><font size="32" color="gray"><i class="fa fa-cc-amex"> </i></font></td>
-                </tr>
-                <tr>
-                  {% for choice in form.tarjetaTipo %}
-                    <td> {{ choice }} </td>
-                  {% endfor %}
-                </tr>
-              </table>
-              {{ form.tarjetaTipo.errors }}
-              <p>
-                {{ form.tarjeta }}
-                <span
-                  class='error'
-                  id='{{form.tarjeta.name}}_error'
-                  aria-live="polite"
-                ></span>
-              </p>
-              {{ form.tarjeta.errors }}
+              {{ form.pin.errors }}
             </div>
           </div>
           <input
@@ -94,6 +59,11 @@
             onclick="self.close()"
             class="btn btn-primary"
           >
+            <a href="../crearbilletera" onClick="return popup(this, 'Pago de Reserva')">
+              <button class="btn btn-primary">
+                Crear Billetera
+              </button>
+            </a>
         </form>
       {% endif %}
       {% if pago %}
@@ -164,6 +134,14 @@
             </div>
           </div>
         </div>
+      {% endif %}
+      {% if formIns %}
+        <div class="row">
+          <div class="col-md-7" style="color:{{color}}">
+            {{mensaje}}
+            <hr>
+          </div>
+         
       {% endif %}
     </div>
   </div>
