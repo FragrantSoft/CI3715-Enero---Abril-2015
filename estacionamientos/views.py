@@ -66,7 +66,7 @@ def PropietarioAll(request):
                   
             obj = Propietario(
                 nombre_prop     = form.cleaned_data['nombre_prop'],
-                CI_prop         = form.cleaned_data['CI_prop'],
+                Cedula          = form.cleaned_data['CI_prop'],
                 telefono_prop   = form.cleaned_data['telefono_prop'],
                 email_prop      = form.cleaned_data['email_prop'],
             )

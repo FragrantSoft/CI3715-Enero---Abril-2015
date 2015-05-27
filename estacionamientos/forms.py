@@ -149,7 +149,7 @@ class PropietarioForm(forms.Form):
         )
     )
     
-    CI_prop = forms.CharField(
+    Cedula = forms.CharField(
         required = True,
         label = "Cedula",
         validators = [id_validator],

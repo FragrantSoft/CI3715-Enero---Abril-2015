@@ -7,7 +7,9 @@ from decimal import Decimal
 from datetime import timedelta
 
 class Propietario(models.Model):
-    nomb_prop = models.CharField(max_length = 50)
+    
+    Cedula      = models.CharField(max_length = 50)
+    nomb_prop   = models.CharField(max_length = 50)
     telefono3   = models.CharField(blank = True, null = True, max_length = 30)
     email2      = models.EmailField(blank = True, null = True)
     
